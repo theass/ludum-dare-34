@@ -19,21 +19,22 @@ function stage:generate_noise_table()
 end
 
 stage.race_stages = {
-   {name="prefade", duration=60},
-   {name="fadein", duration=120},
-   {name="warmup", duration=60},
-   {name="3", duration=60},
-   {name="2", duration=60},
-   {name="1", duration=60},
-   {name="GO", active=true, duration=10},
-   {name="results", duration=60*10},
-   {name="postfade", duration=120},
+   {name="prefade", duration=20},
+   {name="fadein", duration=30},
+   {name="warmup", duration=30},
+   {name="3", duration=60, sound="3"},
+   {name="2", duration=60, sound="2"},
+   {name="1", duration=60, sound="1"},
+   {name="GO", active=true, duration=10, sound="go"},
+   {name="results", duration=60*5, sound="time"},
+   {name="postfade", duration=30},
    {name="returntotitle", exit=true}
 }
 
 function stage:load(level_properties)
    self.properties = level_properties
    self.image = love.graphics.newImage("levels/".. level_properties.image_name ..".png")
+   self.image_data = love.image.newImageData("levels/".. level_properties.image_name ..".png")
 
    self.flower_sprite = sprites.new("brush")
    self.flower_batch = love.graphics.newSpriteBatch(self.flower_sprite.sheet.image, 1024*1024)
@@ -46,6 +47,9 @@ function stage:load(level_properties)
 
    -- debug
    self.debug_control_map = love.graphics.newImage(self.control_map)
+
+   -- reset camera
+   camera:set(self.properties.starting_position.x, self.properties.starting_position.y, self.properties.starting_rotation)
 
    -- minimap!
    self.minimap_image = love.graphics.newImage("levels/" .. level_properties.image_name .. ".minimap.png")
@@ -219,6 +223,7 @@ function stage:update()
       if self.seed_sound_delay > 0 then
          self.seed_sound_delay = self.seed_sound_delay - 1
       end
+      self.stage_timer = self.stage_timer + 1
    else
       if stage.race_stages[self.race_stage].exit then
          game_state = "title"
@@ -226,11 +231,14 @@ function stage:update()
       if stage.race_stages[self.race_stage].duration then
          -- this is an auto-advancing race stage; handle its timer and promote
          -- if necessary
-         if self.stage_timer > stage.race_stages[self.race_stage].duration then
+         if self.stage_timer >= stage.race_stages[self.race_stage].duration then
             self.race_stage = self.race_stage + 1
             self.stage_timer = 0
             if stage.race_stages[self.race_stage].active then
                self.race_active = true
+            end
+            if stage.race_stages[self.race_stage].sound then
+               sounds.play(stage.race_stages[self.race_stage].sound)
             end
          else
             self.stage_timer = self.stage_timer + 1
